@@ -9,6 +9,13 @@
 #define BLOCK_HEIGHT 15
 #define BLOCK_PADDING 10
 
+typedef enum Screen{
+    LOGO,
+    TITLE,
+    GAMEPLAY,
+    ABOUT,
+    END}
+    GameScren;
 
  typedef struct Ball{
         Vector2 position;
@@ -43,7 +50,7 @@ void InitBlocks(){
     for (int row = 0; row < 5; row++){
         for (int col = 0; col < 10; col++){
             Block *block = &blocks[row * BLOCK_COLUMNS + col];
-            block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 5};
+            block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 5}; //+5 for edge spacing
             block->width = BLOCK_WIDTH;
             block->height = BLOCK_HEIGHT;
             block->color = BLUE;
@@ -51,6 +58,7 @@ void InitBlocks(){
         }
     }
 }
+
 
 void DrawBlocks() {
     for (int i = 0; i < BLOCK_ROWS * BLOCK_COLUMNS; i++) {
@@ -70,10 +78,16 @@ void CheckBallCollision(Ball *ball) {
             }
         }
     }
-}
+};
 
 int main(void){
+
     InitWindow(500, 700, "Raylib Window");
+    GameScren currentScreen = LOGO;
+    int frameCounter = 0;
+    int randomStartValue = GetRandomValue(0, 1) == 0 ? -1 : 1; //get 1 or -1
+    int currentSelection = 0;
+    SetTargetFPS(60);
    
     Paddle paddle = {
         .position = {GetScreenWidth()/2, GetScreenHeight()/1.2},
@@ -94,74 +108,126 @@ int main(void){
 
     InitBlocks();
 
-    for (int i = 0; i < 10; i++){
-        Block block = {
-            .position = {i * 50, 50},
-            .hitBox = {block.position.x, block.position.y, 50, 25},
-            .width = 50,
-            .height = 25,
-            .color = GREEN,
-            .isDestroyed = false
-        };
-    }
-
-    int randomStartValue = GetRandomValue(0, 1) == 0 ? -1 : 1;
+    
     
     while(!WindowShouldClose()){
 
-        //move paddle
-        if (IsKeyDown(KEY_RIGHT)){
-            if (paddle.position.x < GetScreenWidth() - paddle.width){
-                paddle.position.x += GetFrameTime() * 300;
+        switch (currentScreen){
+        case LOGO:
+        {
+            frameCounter++;
+            if (frameCounter > 120){
+                currentScreen = TITLE;
             }
-        }
-        if (IsKeyDown(KEY_LEFT)){
-            if (paddle.position.x > 0){
-                paddle.position.x -= GetFrameTime() * 300;
+        }break;
+
+        case TITLE:{
+            if (IsKeyPressed(KEY_UP)){
+                currentSelection = 0;
             }
-        }
-
-
-        //move ball
-        ball.position.y +=  ball.isFalling ? GetFrameTime() * 400 : -GetFrameTime() * 400;
-        ball.position.x += randomStartValue * (GetFrameTime() * 300);
-        //align hitbox 
-        update(&paddle, &ball);
-
+            if (IsKeyPressed(KEY_DOWN)){
+                currentSelection = 1;
+            }
+            if (IsKeyPressed(KEY_ENTER) && currentSelection == 0){
+                currentScreen = GAMEPLAY;
+            }
+            if (IsKeyPressed(KEY_ENTER) && currentSelection == 1){
+                currentScreen = ABOUT;
+            }
+        }break;
         
+        case GAMEPLAY:{
+            //move paddle
+            if (IsKeyDown(KEY_RIGHT)){
+                if (paddle.position.x < GetScreenWidth() - paddle.width){
+                    paddle.position.x += GetFrameTime() * 300;
+                }
+            }
+            if (IsKeyDown(KEY_LEFT)){
+                if (paddle.position.x > 0){
+                    paddle.position.x -= GetFrameTime() * 300;
+                }
+            }
 
-        if (CheckCollisionRecs(ball.hitBox, paddle.hitBox1)){
-            //if hits left half from right direction go left
-            ball.isFalling = false;
-            if (randomStartValue > 0){
+
+            //move ball
+            ball.position.y +=  ball.isFalling ? GetFrameTime() * 400 : -GetFrameTime() * 400;
+            ball.position.x += randomStartValue * (GetFrameTime() * 300);
+            //align hitbox 
+            update(&paddle, &ball);
+
+            
+
+            if (CheckCollisionRecs(ball.hitBox, paddle.hitBox1)){
+                //if hits left half from right direction go left
+                ball.isFalling = false;
+                if (randomStartValue > 0){
+                    randomStartValue = -randomStartValue;
+                }
+                
+            };
+            if (CheckCollisionRecs(ball.hitBox, paddle.hitBox2)){
+                //if hits right half from left direction go right
+                ball.isFalling = false;
+                if (randomStartValue < 0){
+                    randomStartValue = -randomStartValue;
+                }
+                
+            };
+            CheckBallCollision(&ball); // Check if ball hits any blocks
+
+            if (ball.hitBox.y <= 0){
+                ball.isFalling = !ball.isFalling;
+            }
+            if (ball.hitBox.x <= 0 || ball.hitBox.x >= GetScreenWidth() - ball.radius){
                 randomStartValue = -randomStartValue;
             }
-            
-        };
-        if (CheckCollisionRecs(ball.hitBox, paddle.hitBox2)){
-            //if hits right half from left direction go right
-            ball.isFalling = false;
-            if (randomStartValue < 0){
-                randomStartValue = -randomStartValue;
+            if (ball.position.y >= GetScreenHeight()){
+                currentScreen = END;
             }
-            
-        };
-        CheckBallCollision(&ball);
-
-        if (ball.hitBox.y <= 0){
-            ball.isFalling = !ball.isFalling;
+        }break;
+        default: break;
         }
-        if (ball.hitBox.x <= 0 || ball.hitBox.x >= GetScreenWidth() - ball.radius){
-            randomStartValue = -randomStartValue;
-        }
+    
 
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
-            DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, RED);
-            DrawCircleV(ball.position, ball.radius, ball.color);
-            DrawBlocks();
-            
+
+            switch(currentScreen){
+                case LOGO:{
+                    DrawText("LOGO SCREEN", 20, 20, 40, RED);
+                    
+                }break;
+                case TITLE:{
+                    DrawText("Breakout", (GetScreenWidth() - MeasureText("Breakout",40))/2, 20, 40, RED);
+
+                    if (currentSelection == 0){
+                        DrawCircle((GetScreenWidth() - MeasureText("Start",20))/2 - 15, GetScreenHeight()/1.5 + 10, 5, RED);
+                        DrawText("Start", (GetScreenWidth() - MeasureText("Start",20))/2, GetScreenHeight()/1.5, 20, RED);
+                        DrawText("About", (GetScreenWidth() - MeasureText("About", 20))/2, GetScreenHeight()/1.3, 20, RED);
+                    }
+                    
+                    else{
+                       
+                        DrawText("Start", (GetScreenWidth() - MeasureText("Start",20))/2, GetScreenHeight()/1.5, 20, RED);
+                        DrawCircle((GetScreenWidth() - MeasureText("About",20))/2 - 15, GetScreenHeight()/1.3 + 10, 5, RED);
+                        DrawText("About", (GetScreenWidth() - MeasureText("About", 20))/2, GetScreenHeight()/1.3, 20, RED);
+                    }
+                    
+                }break;
+                case GAMEPLAY:{
+                    DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, RED);
+                    DrawCircleV(ball.position, ball.radius, ball.color);
+                    DrawBlocks();
+                    
+                }break;
+                case END:{
+                    DrawText("END SCREEN", 20, 20, 40, RED);
+                }break;
+                default: break;
+            }
+
             // DrawCircle(ballX, ballY, 10, BLUE);
         EndDrawing();
     }
@@ -170,7 +236,7 @@ int main(void){
     return 0;
 }
 
-void update(Paddle *paddle, Ball *ball) {
+void update(Paddle *paddle, Ball *ball){
     paddle->hitBox1.x = paddle->position.x;
     paddle->hitBox1.y = paddle->position.y;
     paddle->hitBox1.width = paddle->width/2;
