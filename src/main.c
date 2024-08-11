@@ -3,6 +3,13 @@
 #include <stdio.h>
 
 
+#define BLOCK_ROWS 5
+#define BLOCK_COLUMNS 10
+#define BLOCK_WIDTH 40
+#define BLOCK_HEIGHT 15
+#define BLOCK_PADDING 10
+
+
  typedef struct Ball{
         Vector2 position;
         Rectangle hitBox;
@@ -19,8 +26,51 @@
         float height;
         Color color;
     } Paddle;
-
+    
+    typedef struct block{
+        Vector2 position;
+        Rectangle hitBox;
+        float width;
+        float height;
+        Color color;
+        bool isDestroyed;
+    } Block;
+    
 void update(Paddle *paddle, Ball *ball);
+Block blocks[BLOCK_ROWS * BLOCK_COLUMNS];
+
+void InitBlocks(){
+    for (int row = 0; row < 5; row++){
+        for (int col = 0; col < 10; col++){
+            Block *block = &blocks[row * BLOCK_COLUMNS + col];
+            block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 5};
+            block->width = BLOCK_WIDTH;
+            block->height = BLOCK_HEIGHT;
+            block->color = BLUE;
+            block->isDestroyed = false;
+        }
+    }
+}
+
+void DrawBlocks() {
+    for (int i = 0; i < BLOCK_ROWS * BLOCK_COLUMNS; i++) {
+        if (!blocks[i].isDestroyed) {
+            DrawRectangleV(blocks[i].position, (Vector2){blocks[i].width, blocks[i].height}, blocks[i].color);
+        }
+    }
+}
+void CheckBallCollision(Ball *ball) {
+    for (int i = 0; i < BLOCK_ROWS * BLOCK_COLUMNS; i++) {
+        if (!blocks[i].isDestroyed) {
+            Rectangle blockRect = {blocks[i].position.x, blocks[i].position.y, blocks[i].width, blocks[i].height};
+            if (CheckCollisionCircleRec(ball->position, ball->radius, blockRect)) {
+                blocks[i].isDestroyed = true;
+                ball->isFalling = !ball->isFalling; // Change ball direction
+                break;
+            }
+        }
+    }
+}
 
 int main(void){
     InitWindow(500, 700, "Raylib Window");
@@ -41,6 +91,19 @@ int main(void){
         .isFalling = true,
         .color = BLUE
     };
+
+    InitBlocks();
+
+    for (int i = 0; i < 10; i++){
+        Block block = {
+            .position = {i * 50, 50},
+            .hitBox = {block.position.x, block.position.y, 50, 25},
+            .width = 50,
+            .height = 25,
+            .color = GREEN,
+            .isDestroyed = false
+        };
+    }
 
     int randomStartValue = GetRandomValue(0, 1) == 0 ? -1 : 1;
     
@@ -83,7 +146,7 @@ int main(void){
             }
             
         };
-        
+        CheckBallCollision(&ball);
 
         if (ball.hitBox.y <= 0){
             ball.isFalling = !ball.isFalling;
@@ -97,6 +160,8 @@ int main(void){
             ClearBackground(RAYWHITE);
             DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, RED);
             DrawCircleV(ball.position, ball.radius, ball.color);
+            DrawBlocks();
+            
             // DrawCircle(ballX, ballY, 10, BLUE);
         EndDrawing();
     }
