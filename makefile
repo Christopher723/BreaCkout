@@ -6,4 +6,4 @@ OSX_OUT = -o "breakout"
 CFILES = src/*.c
 
 build_osx:
-	$(COMPILER) $(CFILES) $(SOURCE_LIBS) $(OSX_OPT) $(OSX_OUT)
+	$(COMPILER) -g $(CFILES) $(SOURCE_LIBS) $(OSX_OPT) $(OSX_OUT)

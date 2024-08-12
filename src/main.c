@@ -50,7 +50,7 @@ void InitBlocks(){
     for (int row = 0; row < 5; row++){
         for (int col = 0; col < 10; col++){
             Block *block = &blocks[row * BLOCK_COLUMNS + col];
-            block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 5}; //+5 for edge spacing
+            block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 75}; //+5 for edge spacing
             block->width = BLOCK_WIDTH;
             block->height = BLOCK_HEIGHT;
             block->color = BLUE;
@@ -67,14 +67,17 @@ void DrawBlocks() {
         }
     }
 }
-void CheckBallCollision(Ball *ball) {
+void CheckBallCollision(Ball *ball, int* score) {
     for (int i = 0; i < BLOCK_ROWS * BLOCK_COLUMNS; i++) {
         if (!blocks[i].isDestroyed) {
             Rectangle blockRect = {blocks[i].position.x, blocks[i].position.y, blocks[i].width, blocks[i].height};
             if (CheckCollisionCircleRec(ball->position, ball->radius, blockRect)) {
                 blocks[i].isDestroyed = true;
                 ball->isFalling = !ball->isFalling; // Change ball direction
+                *score += 50;
+
                 break;
+                
             }
         }
     }
@@ -82,11 +85,13 @@ void CheckBallCollision(Ball *ball) {
 
 int main(void){
 
-    InitWindow(500, 700, "Raylib Window");
-    GameScren currentScreen = LOGO;
+    InitWindow(500, 800, "Raylib Window");
+    GameScren currentScreen = TITLE;
     int frameCounter = 0;
     int randomStartValue = GetRandomValue(0, 1) == 0 ? -1 : 1; //get 1 or -1
     int currentSelection = 0;
+    int score = 0;
+    int *scorePointer = &score;
     SetTargetFPS(60);
    
     Paddle paddle = {
@@ -99,7 +104,7 @@ int main(void){
     };
     
     Ball ball = {
-        .position = {GetScreenWidth()/2, GetScreenHeight()/5},
+        .position = {GetScreenWidth()/2, GetScreenHeight()/4},
         .radius = 10,
         .hitBox = {ball.radius,ball.radius, ball.position.x, ball.position.y},
         .isFalling = true,
@@ -174,7 +179,8 @@ int main(void){
                 }
                 
             };
-            CheckBallCollision(&ball); // Check if ball hits any blocks
+            CheckBallCollision(&ball, scorePointer); // Check if ball hits any blocks
+            // printf("Score: %d\n", score);
 
             if (ball.hitBox.y <= 0){
                 ball.isFalling = !ball.isFalling;
@@ -220,6 +226,7 @@ int main(void){
                     DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, RED);
                     DrawCircleV(ball.position, ball.radius, ball.color);
                     DrawBlocks();
+                    DrawText(TextFormat("Score: %d", score), 20, 20, 40, BLACK); // Draw score
                     
                 }break;
                 case END:{
