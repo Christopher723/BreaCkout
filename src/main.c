@@ -22,6 +22,8 @@ typedef enum Screen{
         Rectangle hitBox;
         float radius;
         bool isFalling;
+        bool isStart;
+
         Color color;
     } Ball;
 
@@ -67,7 +69,7 @@ void DrawBlocks() {
         }
     }
 }
-void CheckBallCollision(Ball *ball, int* score) {
+void CheckBallCollision(Ball *ball, int *score) {
     for (int i = 0; i < BLOCK_ROWS * BLOCK_COLUMNS; i++) {
         if (!blocks[i].isDestroyed) {
             Rectangle blockRect = {blocks[i].position.x, blocks[i].position.y, blocks[i].width, blocks[i].height};
@@ -75,13 +77,29 @@ void CheckBallCollision(Ball *ball, int* score) {
                 blocks[i].isDestroyed = true;
                 ball->isFalling = !ball->isFalling; // Change ball direction
                 *score += 50;
-
                 break;
                 
             }
         }
     }
 };
+
+void InitObjects(Paddle *paddle, Ball *ball) {
+    paddle->position = (Vector2){GetScreenWidth() / 2, GetScreenHeight() / 1.2};
+    paddle->hitBox1 = (Rectangle){paddle->position.x, paddle->height, paddle->width / 2, paddle->position.y};
+    paddle->hitBox2 = (Rectangle){paddle->position.x + paddle->width / 2, paddle->height, paddle->width / 2, paddle->position.y};
+    paddle->width = 70;
+    paddle->height = 25;
+    paddle->color = RED;
+
+    ball->position = (Vector2){GetScreenWidth() / 2, GetScreenHeight() / 3};
+    ball->radius = 10;
+    ball->hitBox = (Rectangle){ball->radius, ball->radius, ball->position.x, ball->position.y};
+    ball->isFalling = true;
+    ball->isStart = false;
+    ball->color = BLUE;
+}
+
 
 int main(void){
 
@@ -92,25 +110,13 @@ int main(void){
     int currentSelection = 0;
     int score = 0;
     int *scorePointer = &score;
+    Paddle paddle;
+    Ball ball;
+    
     SetTargetFPS(60);
    
-    Paddle paddle = {
-        .position = {GetScreenWidth()/2, GetScreenHeight()/1.2},
-        .hitBox1 = {paddle.position.x, paddle.height,paddle.width/2, paddle.position.y},
-        .hitBox2 = {paddle.position.x + paddle.width/2, paddle.height,paddle.width/2, paddle.position.y},
-        .width = 70,
-        .height = 25,
-        .color = RED
-    };
     
-    Ball ball = {
-        .position = {GetScreenWidth()/2, GetScreenHeight()/4},
-        .radius = 10,
-        .hitBox = {ball.radius,ball.radius, ball.position.x, ball.position.y},
-        .isFalling = true,
-        .color = BLUE
-    };
-
+    InitObjects(&paddle, &ball);
     InitBlocks();
 
     
@@ -143,23 +149,30 @@ int main(void){
         
         case GAMEPLAY:{
             //move paddle
+            if (IsKeyDown(KEY_SPACE)){
+                ball.isStart = true;
+            }
             if (IsKeyDown(KEY_RIGHT)){
                 if (paddle.position.x < GetScreenWidth() - paddle.width){
-                    paddle.position.x += GetFrameTime() * 300;
+                    paddle.position.x += GetFrameTime() * 350;
                 }
             }
             if (IsKeyDown(KEY_LEFT)){
                 if (paddle.position.x > 0){
-                    paddle.position.x -= GetFrameTime() * 300;
+                    paddle.position.x -= GetFrameTime() * 350;
                 }
             }
 
 
             //move ball
-            ball.position.y +=  ball.isFalling ? GetFrameTime() * 400 : -GetFrameTime() * 400;
-            ball.position.x += randomStartValue * (GetFrameTime() * 300);
+            if(ball.isStart){
+                ball.position.y +=  ball.isFalling ? GetFrameTime() * 400 : -GetFrameTime() * 400;
+                ball.position.x +=  randomStartValue * (GetFrameTime() * 300);
+            }
             //align hitbox 
             update(&paddle, &ball);
+            
+            
 
             
 
@@ -227,6 +240,9 @@ int main(void){
                     DrawCircleV(ball.position, ball.radius, ball.color);
                     DrawBlocks();
                     DrawText(TextFormat("Score: %d", score), 20, 20, 40, BLACK); // Draw score
+                    if (!ball.isStart){
+                        DrawText("Press SPACE to start", (GetScreenWidth() - MeasureText("Press SPACE to start", 15))/2, GetScreenHeight()/2, 15, RED);
+                    }
                     
                 }break;
                 case END:{
