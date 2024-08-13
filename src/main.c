@@ -43,19 +43,22 @@ typedef enum Screen{
         float height;
         Color color;
         bool isDestroyed;
+        int points;
     } Block;
     
 void update(Paddle *paddle, Ball *ball);
 Block blocks[BLOCK_ROWS * BLOCK_COLUMNS];
 
 void InitBlocks(){
+    Color colors[5] = {BLUE, GREEN, YELLOW, ORANGE, RED};
     for (int row = 0; row < 5; row++){
         for (int col = 0; col < 10; col++){
             Block *block = &blocks[row * BLOCK_COLUMNS + col];
             block->position = (Vector2){col * (BLOCK_WIDTH + BLOCK_PADDING) + 5, row * (BLOCK_HEIGHT + BLOCK_PADDING) + 75}; //+5 for edge spacing
             block->width = BLOCK_WIDTH;
             block->height = BLOCK_HEIGHT;
-            block->color = BLUE;
+            block->color = colors[row];
+            block->points = 10 * (5 - row);
             block->isDestroyed = false;
         }
     }
@@ -76,7 +79,7 @@ void CheckBallCollision(Ball *ball, int *score) {
             if (CheckCollisionCircleRec(ball->position, ball->radius, blockRect)) {
                 blocks[i].isDestroyed = true;
                 ball->isFalling = !ball->isFalling; // Change ball direction
-                *score += 50;
+                *score += blocks[i].points;
                 break;
                 
             }
@@ -90,14 +93,14 @@ void InitObjects(Paddle *paddle, Ball *ball) {
     paddle->hitBox2 = (Rectangle){paddle->position.x + paddle->width / 2, paddle->height, paddle->width / 2, paddle->position.y};
     paddle->width = 70;
     paddle->height = 25;
-    paddle->color = RED;
+    paddle->color = BLACK;
 
     ball->position = (Vector2){GetScreenWidth() / 2, GetScreenHeight() / 3};
     ball->radius = 10;
     ball->hitBox = (Rectangle){ball->radius, ball->radius, ball->position.x, ball->position.y};
     ball->isFalling = true;
     ball->isStart = false;
-    ball->color = BLUE;
+    ball->color = BLACK;
 }
 
 
@@ -107,6 +110,7 @@ int main(void){
     GameScren currentScreen = TITLE;
     int frameCounter = 0;
     int randomStartValue = GetRandomValue(0, 1) == 0 ? -1 : 1; //get 1 or -1
+
     int currentSelection = 0;
     int score = 0;
     int *scorePointer = &score;
@@ -236,7 +240,7 @@ int main(void){
                     
                 }break;
                 case GAMEPLAY:{
-                    DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, RED);
+                    DrawRectangle(paddle.position.x, GetScreenHeight()/1.2, paddle.width, 25, paddle.color);
                     DrawCircleV(ball.position, ball.radius, ball.color);
                     DrawBlocks();
                     DrawText(TextFormat("Score: %d", score), 20, 20, 40, BLACK); // Draw score
